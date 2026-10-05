@@ -1,0 +1,61 @@
+# Castora on one server: app (backend + frontend + orchestrator behind nginx :5000),
+# Postgres, Redis, Temporal (Postgres-backed, no Elasticsearch) and Caddy for HTTPS.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: castora
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: castora
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U castora"]
+      interval: 5s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    restart: always
+  temporal:
+    image: temporalio/auto-setup:1.29.7
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: castora
+      POSTGRES_PWD: ${POSTGRES_PASSWORD}
+      POSTGRES_SEEDS: postgres
+      ENABLE_ES: "false"
+      DEFAULT_NAMESPACE: default
+      SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES: "true"
+  castora:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+      - temporal
+    env_file: castora.env
+    volumes:
+      - uploads:/uploads
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+volumes:
+  pg-data:
+  uploads:
+  caddy-data:
+  caddy-config:

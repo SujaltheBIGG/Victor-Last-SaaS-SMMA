@@ -90,6 +90,8 @@ async function start() {
     Logger.log(`🚀 Backend is running on: http://localhost:${port}`);
   } catch (e) {
     Logger.error(`Backend failed to start on port ${port}`, e);
+    // exit so the process manager retries, e.g. while Temporal is still starting
+    process.exit(1);
   }
 }
 
