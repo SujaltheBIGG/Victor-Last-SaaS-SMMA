@@ -1,0 +1,9 @@
+# Castora app service: backend, frontend and orchestrator behind nginx on
+# port 5000 (set it as the target port of the public domain). Setup: DEPLOY.md
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.dev"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
